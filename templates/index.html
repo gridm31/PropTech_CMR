@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMR 분석 프로그램 | CMR Analysis Program</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1 class="main-title">
+                세입자 보증금 반환 리스크 점검
+                <span class="sub-title">Tenant Deposit Refund Risk Assessment</span>
+            </h1>
+            <p class="subtitle">
+                CMR(Charge-to-Market Ratio) 지표 분석
+                <span class="subtitle-en">CMR (Charge-to-Market Ratio) Analysis</span>
+            </p>
+        </header>
+
+        <!-- 법적 고지 -->
+        <div class="legal-notice">
+            <div class="notice-icon">⚠️</div>
+            <div class="notice-content">
+                <strong>법적 고지 Legal Notice</strong>
+                <p>
+                    본 프로그램은 단순 참고용 지표 산출 도구이며, 산출된 결과에 대해 법적 책임을 지지 않습니다. 
+                    실제 거래 시 반드시 전문가의 자문을 받으시기 바랍니다.
+                    <br>
+                    <span class="notice-en">
+                        This program is a reference tool only and does not bear any legal responsibility for the calculated results. 
+                        Please consult a professional for actual transactions.
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <!-- 단계 1: 파일 업로드 -->
+        <section class="section">
+            <div class="section-header">
+                <span class="step-number">1</span>
+                <h2>
+                    등기부등본 업로드
+                    <span class="section-subtitle">Upload Real Estate Registry</span>
+                </h2>
+            </div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <p class="upload-text">
+                    등기부등본 파일을 선택하거나 드래그해주세요
+                    <span class="upload-text-en">Select or drag real estate registry file (PDF or Image)</span>
+                </p>
+                <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.bmp,.tiff" hidden>
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    파일 선택 Select File
+                </button>
+                <p class="file-info">
+                    지원 형식: PDF, PNG, JPG, JPEG, BMP, TIFF (최대 16MB)
+                    <br>
+                    <span class="file-info-en">Supported formats: PDF, PNG, JPG, JPEG, BMP, TIFF (Max 16MB)</span>
+                </p>
+            </div>
+            <div id="fileStatus" class="file-status hidden"></div>
+        </section>
+
+        <!-- 단계 2: OCR 결과 -->
+        <section class="section hidden" id="ocrSection">
+            <div class="section-header">
+                <span class="step-number">2</span>
+                <h2>
+                    추출된 정보 확인
+                    <span class="section-subtitle">Extracted Information</span>
+                </h2>
+            </div>
+            
+            <!-- 주소 정보 -->
+            <div class="info-card">
+                <h3>
+                    📍 물건 소재지
+                    <span class="card-subtitle">Property Address</span>
+                </h3>
+                <div id="addressInfo" class="info-content">
+                    <p class="loading">정보를 추출하는 중입니다... Extracting information...</p>
+                </div>
+            </div>
+
+            <!-- 담보권 정보 -->
+            <div class="info-card">
+                <h3>
+                    💰 담보권액 정보 (을구)
+                    <span class="card-subtitle">Mortgage Information (Section B)</span>
+                </h3>
+                <div id="mortgageInfo" class="info-content">
+                    <p class="loading">정보를 추출하는 중입니다... Extracting information...</p>
+                </div>
+                <div class="total-mortgage">
+                    <span class="label">
+                        총 채권최고액:
+                        <span class="label-en">Total Mortgage Amount:</span>
+                    </span>
+                    <span id="totalMortgage" class="amount">0원</span>
+                </div>
+            </div>
+
+            <!-- 수동 수정 안내 -->
+            <div class="help-box">
+                <strong>💡 도움말 Help</strong>
+                <p>
+                    OCR로 추출된 정보가 정확하지 않을 수 있습니다. 
+                    등기부등본 원본과 비교하여 아래 실거래가 입력 시 정확한 담보권액을 확인해주세요.
+                    <br>
+                    <span class="help-en">
+                        OCR extraction may not be 100% accurate. 
+                        Please verify the mortgage amount with the original document when entering the market price below.
+                    </span>
+                </p>
+            </div>
+        </section>
+
+        <!-- 단계 3: 실거래가 입력 및 계산 -->
+        <section class="section hidden" id="calculateSection">
+            <div class="section-header">
+                <span class="step-number">3</span>
+                <h2>
+                    실거래가 입력 및 분석
+                    <span class="section-subtitle">Enter Market Price & Analysis</span>
+                </h2>
+            </div>
+
+            <div class="input-group">
+                <label for="marketPrice">
+                    실거래가 (원)
+                    <span class="label-en">Market Price (KRW)</span>
+                </label>
+                <input type="number" id="marketPrice" placeholder="예: 500000000 (5억원)" min="0" step="1000000">
+                <p class="input-help">
+                    해당 물건의 가장 최근 실거래가를 입력해주세요. 
+                    과거 실거래가가 없는 경우, 같은 건물 내 유사 타입 물건의 실거래가를 참고하세요.
+                    <br>
+                    <span class="help-en">
+                        Enter the most recent transaction price. If not available, refer to similar properties in the same building.
+                    </span>
+                </p>
+            </div>
+
+            <div class="input-group">
+                <label for="totalMortgageInput">
+                    총 채권최고액 (원) - 필요시 수정
+                    <span class="label-en">Total Mortgage Amount (KRW) - Modify if needed</span>
+                </label>
+                <input type="number" id="totalMortgageInput" placeholder="자동으로 입력됩니다" min="0" step="1000000" readonly>
+                <button class="btn btn-secondary" id="editMortgageBtn">수정 Edit</button>
+            </div>
+
+            <button class="btn btn-large btn-primary" id="calculateBtn">
+                CMR 지표 계산하기 Calculate CMR
+            </button>
+        </section>
+
+        <!-- 단계 4: 결과 -->
+        <section class="section hidden" id="resultSection">
+            <div class="section-header">
+                <span class="step-number">4</span>
+                <h2>
+                    분석 결과
+                    <span class="section-subtitle">Analysis Result</span>
+                </h2>
+            </div>
+
+            <!-- CMR 지표 -->
+            <div class="result-card">
+                <h3>
+                    📊 CMR 지표
+                    <span class="card-subtitle">CMR (Charge-to-Market Ratio)</span>
+                </h3>
+                <div class="cmr-display">
+                    <div class="cmr-value" id="cmrValue">0%</div>
+                    <div class="risk-indicator" id="riskIndicator">
+                        <span class="risk-label">리스크 레벨 Risk Level:</span>
+                        <span class="risk-badge" id="riskBadge">-</span>
+                    </div>
+                    <p class="risk-description" id="riskDescription"></p>
+                </div>
+                <div class="formula">
+                    <strong>계산식 Formula:</strong> CMR = (담보권액 ÷ 실거래가) × 100
+                    <br>
+                    <span class="formula-en">CMR = (Mortgage Amount ÷ Market Price) × 100</span>
+                </div>
+            </div>
+
+            <!-- 안전보증금 -->
+            <div class="result-card highlight">
+                <h3>
+                    🏠 안전보증금
+                    <span class="card-subtitle">Maximum Safe Deposit</span>
+                </h3>
+                <div class="safe-deposit-display">
+                    <div class="safe-deposit-value" id="safeDepositValue">0원</div>
+                    <p class="safe-deposit-description">
+                        임차보증금 설정 시 최대로 가져갈 수 있는 안전한 금액입니다.
+                        <br>
+                        <span class="description-en">
+                            Maximum safe amount for tenant deposit.
+                        </span>
+                    </p>
+                </div>
+                <div class="formula">
+                    <strong>계산식 Formula:</strong> 안전보증금 = 실거래가 - 담보권액
+                    <br>
+                    <span class="formula-en">Safe Deposit = Market Price - Mortgage Amount</span>
+                </div>
+            </div>
+
+            <!-- 상세 정보 -->
+            <div class="detail-info">
+                <h4>
+                    상세 계산 내역
+                    <span class="detail-subtitle">Detailed Calculation</span>
+                </h4>
+                <table class="detail-table">
+                    <tr>
+                        <td>실거래가 Market Price</td>
+                        <td id="detailMarketPrice" class="detail-value">0원</td>
+                    </tr>
+                    <tr>
+                        <td>총 채권최고액 Total Mortgage</td>
+                        <td id="detailMortgage" class="detail-value">0원</td>
+                    </tr>
+                    <tr class="highlight-row">
+                        <td>안전보증금 Safe Deposit</td>
+                        <td id="detailSafeDeposit" class="detail-value">0원</td>
+                    </tr>
+                    <tr class="highlight-row">
+                        <td>CMR 지표 CMR Ratio</td>
+                        <td id="detailCMR" class="detail-value">0%</td>
+                    </tr>
+                </table>
+            </div>
+
+            <button class="btn btn-large btn-secondary" onclick="location.reload()">
+                새로 계산하기 Start New Analysis
+            </button>
+        </section>
+
+        <!-- 참고 정보 -->
+        <section class="section reference">
+            <h3>
+                📚 CMR 지표 참고 가이드
+                <span class="card-subtitle">CMR Reference Guide</span>
+            </h3>
+            <div class="reference-content">
+                <div class="reference-item">
+                    <div class="reference-label low">CMR ≤ 50%</div>
+                    <p>
+                        낮은 리스크: 비교적 안전한 수준으로 평가됩니다.
+                        <br>
+                        <span class="reference-en">Low Risk: Considered relatively safe.</span>
+                    </p>
+                </div>
+                <div class="reference-item">
+                    <div class="reference-label medium">50% < CMR ≤ 70%</div>
+                    <p>
+                        보통 리스크: 주의가 필요한 수준입니다.
+                        <br>
+                        <span class="reference-en">Medium Risk: Caution required.</span>
+                    </p>
+                </div>
+                <div class="reference-item">
+                    <div class="reference-label high">CMR > 70%</div>
+                    <p>
+                        높은 리스크: 위험 수준이 높아 신중한 검토가 필요합니다.
+                        <br>
+                        <span class="reference-en">High Risk: Careful review required.</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 푸터 -->
+        <footer class="footer">
+            <p>
+                본 프로그램은 참고용 지표입니다. 실제 거래 시 반드시 전문가와 상담하세요.
+                <br>
+                <span class="footer-en">
+                    This program provides reference indicators only. Please consult professionals for actual transactions.
+                </span>
+            </p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
+
+
+

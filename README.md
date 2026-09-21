@@ -1,3 +1,9 @@
+## Summary
+Many tenants in Korea hand a landlord a deposit that can approach the value of the home.
+This tool reads a scanned property register with OCR, totals the active mortgage liens,
+and compares them with the recent transaction price to estimate how much of a deposit
+the property could still cover. The interface works in Korean and English.
+
 # CMR 분석 프로그램 / CMR Analysis Program
 
 세입자의 보증금 반환 리스크 점검을 위한 CMR(Charge-to-Market Ratio) 지표 산출 프로그램
